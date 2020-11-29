@@ -19,8 +19,10 @@
 #include <sys/poll.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#ifdef __linux__
 #include <linux/if.h>
 #include <linux/if_tun.h>
+#endif
 #include <arpa/inet.h>
 
 #define DEBUG 0
