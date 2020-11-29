@@ -133,16 +133,16 @@ int peer_connected(int peer)
 {
 	struct peer_t *p = &peers[peer];
 	int cs;
-	
-	
-	cs = connect(p->tcp_fd, (struct sockaddr*)&p->tcp, sizeof(struct sockaddr_in));
-	
+	socklen_t len = sizeof(struct sockaddr_in);
+
+	cs = getpeername(p->tcp_fd, (struct sockaddr*)&p->tcp, &len);
+
 	if (cs == 0) {
 		p->con = 3;
 		return 1;
 	}
 	else {
-		printf("connection failed\n");
+		perror("connection failed");
 		close(p->tcp_fd);
 		p->tcp_fd = -1;
 		p->con = 0;
