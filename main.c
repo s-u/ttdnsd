@@ -37,6 +37,8 @@
 
 #define NOBODY 65534
 #define DEFAULT_BIND_IP "127.0.0.1"
+#define DEFAULT_BIND_PORT 53
+#define DEFAULT_PEER_PORT 53
 #define DEFAULT_RESOLVERS "ttdnsd.conf"
 #define DEFAULT_LOG "ttdnsd.debug"
 #define DEFAULT_CHROOT "/var/run/ttdnsd"
@@ -46,6 +48,8 @@
 	"syntax: torify ttdnsd [bfcd]\n"\
 	"\t-b\t<local ip>\tbind to local ip\n"\
 	"\t-f\t<dns file>\tfilename to read dns server ip(s) from\n"\
+	"\t-p\t<port>\t\tUDP port to bind to (53)\n"\
+	"\t-r\t<port>\t\tTCP port to connect to on the resolver (53)\n"\
 	"\t-c\t\t\tDON'T chroot(2) to /var/run/ttdnsd\n"\
 	"\t-d\t\t\tDEBUG don't fork/chroot and print debug\n"\
 	"\t-l\t\t\tdon't write debug log (" DEFAULT_LOG ")\n"\
@@ -80,6 +84,9 @@ struct peer_t peers[MAX_PEERS]; /**< TCP peers */
 struct request_t requests[MAX_REQUESTS]; /**< requests queue */
 int udp_fd; /**< port 53 socket */
 
+static int bind_port = DEFAULT_BIND_PORT;
+static int peer_port = DEFAULT_PEER_PORT;
+
 int request_find(int id)
 {
 	int pos = id % MAX_REQUESTS;
@@ -113,11 +120,11 @@ int peer_connect(int peer, int ns)
 	if (fcntl(p->tcp_fd, F_SETFL, O_NONBLOCK)) printf("Setting O_NONBLOCK failed\n");
 	
 	p->tcp.sin_family = AF_INET;
-	p->tcp.sin_port = htons(53);
+	p->tcp.sin_port = htons(peer_port);
 	
 	p->tcp.sin_addr.s_addr = nameservers[ns];
 
-	printf("connecting to: %s\n", inet_ntoa(p->tcp.sin_addr));
+	printf("connecting to: %s (TCP port %d)\n", inet_ntoa(p->tcp.sin_addr), peer_port);
 	cs = connect(p->tcp_fd, (struct sockaddr*)&p->tcp, sizeof(struct sockaddr_in));
 
 	if (cs != 0) perror("connect status:");
@@ -356,14 +363,14 @@ int server(char *bind_ip)
 	
 	memset((char*)&udp, 0, sizeof(struct sockaddr_in));
 	udp.sin_family = AF_INET;
-	udp.sin_port = htons(53);
+	udp.sin_port = htons(bind_port);
 	if (!inet_aton(bind_ip, (struct in_addr*)&udp.sin_addr)) {
 		printf("is not a valid ip address: %s\n", bind_ip);
 		return 0;
 	}
 	if (bind(udp_fd, (struct sockaddr*)&udp, sizeof(struct sockaddr_in)) < 0) {
 		close(udp_fd);
-		printf("can't bind to %s:%d\n", bind_ip, 53);
+		printf("can't bind to %s:%d\n", bind_ip, bind_port);
 		return(-1);
 	}
 
@@ -497,7 +504,7 @@ int main(int argc, char **argv)
 	char bind_ip[50] = {DEFAULT_BIND_IP};
 	int log = 1;
 	
-	while ((opt = getopt(argc, argv, "hdclb:f:")) != EOF) {
+	while ((opt = getopt(argc, argv, "hdclb:f:p:r:")) != EOF) {
 		switch (opt) {
 		case 'd':
 			debug = 1;
@@ -515,6 +522,12 @@ int main(int argc, char **argv)
 		case 'b':
 			strncpy(bind_ip, optarg, sizeof(bind_ip)-1);
 			break;
+		case 'p':
+			bind_port = atoi(optarg);
+			break;
+		case 'r':
+			peer_port = atoi(optarg);
+			break;
 		case 'h':
 		default:
 			printf(HELP_STR);
@@ -525,8 +538,8 @@ int main(int argc, char **argv)
 
 	srand(time(NULL));
 	
-	if (getuid() != 0) {
-		printf("need to run as root to bind to port 53 and for using chroot(2)\n");
+	if ((bind_port < 1024 || dochroot) && getuid() != 0) {
+		printf("need to run as root to bind to port %d and for using chroot(2)\n", bind_port);
 		exit(1);
 	}
 
