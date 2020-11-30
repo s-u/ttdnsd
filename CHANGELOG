@@ -1,6 +1,12 @@
+[changes by Simon Urbanek <simon.urbanek@R-project.org>]
+ - fixed includes to work on non-Linux systems
+ - use getpeername() instead of second connect() which does not work on some systems
+ - add -p <port> to change the UDP port to bind to
+ - add -r <port> to change the TCP port to connect to at the resolver
+
 v0.2 Jul. 22. 2007
  - added libttdnstor.so
-   this is an LD_PRELOAD library for redirecting open/fopen to 
+   this is an LD_PRELOAD library for redirecting open/fopen to
 	 /etc/resolv.conf to alternative file in order to run ttdnsd in local
 	 mode. See README for details.
 
