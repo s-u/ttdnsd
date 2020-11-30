@@ -44,8 +44,8 @@
 #define DEFAULT_CHROOT "/var/run/ttdnsd"
 #define TORIFY_CONF_ENV "TSOCKS_CONF_FILE"
 
-#define HELP_STR ""\
-	"syntax: torify ttdnsd [bfcd]\n"\
+#define HELP_STR "\n"\
+	" Usage: %s [bfprcdl]\n\n"\
 	"\t-b\t<local ip>\tbind to local ip\n"\
 	"\t-f\t<dns file>\tfilename to read dns server ip(s) from\n"\
 	"\t-p\t<port>\t\tUDP port to bind to (53)\n"\
@@ -530,7 +530,7 @@ int main(int argc, char **argv)
 			break;
 		case 'h':
 		default:
-			printf(HELP_STR);
+			printf(HELP_STR, argv[0]);
 			exit(0);
 			break;
 		}
