@@ -15,7 +15,7 @@ instead of `make`.
 ### Usage
 
 ```
-$ttdnsd -h
+$ ttdnsd -h
 
  Usage: ttdnsd [bfprcdl]
 
